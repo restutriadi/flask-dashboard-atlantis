@@ -23,116 +23,120 @@ from processing import allowed_file, read_image, read_metadata, get_reflectance,
 from io import BytesIO
 import glob
 from PIL import Image
+import numpy as np
 
 # Encoder
 from base64 import *
 
 # provide login manager with load_user callback
-# @lm.user_loader
-# def load_user(user_id):
+@lm.user_loader
+def load_user(user_id):
     return User.query.get(int(user_id))
 
 # Logout user
 # @app.route('/logout.html')
 # def logout():
-    logout_user()
-    return redirect(url_for('index'))
+#     logout_user()
+#     return redirect(url_for('index'))
 
 # Register a new user
 # @app.route('/register.html', methods=['GET', 'POST'])
 # def register():
     
-    # cut the page for authenticated users
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
+#     # cut the page for authenticated users
+#     if current_user.is_authenticated:
+#         return redirect(url_for('index'))
             
-    # declare the Registration Form
-    form = RegisterForm(request.form)
+#     # declare the Registration Form
+#     form = RegisterForm(request.form)
 
-    msg = None
+#     msg = None
 
-    if request.method == 'GET': 
+#     if request.method == 'GET': 
 
-        return render_template( 'pages/register.html', form=form, msg=msg )
+#         return render_template( 'pages/register.html', form=form, msg=msg )
 
-    # check if both http method is POST and form is valid on submit
-    if form.validate_on_submit():
+#     # check if both http method is POST and form is valid on submit
+#     if form.validate_on_submit():
 
-        # assign form data to variables
-        username = request.form.get('username', '', type=str)
-        password = request.form.get('password', '', type=str) 
-        email    = request.form.get('email'   , '', type=str) 
+#         # assign form data to variables
+#         username = request.form.get('username', '', type=str)
+#         password = request.form.get('password', '', type=str) 
+#         email    = request.form.get('email'   , '', type=str) 
 
-        # filter User out of database through username
-        user = User.query.filter_by(user=username).first()
+#         # filter User out of database through username
+#         user = User.query.filter_by(user=username).first()
 
-        # filter User out of database through username
-        user_by_email = User.query.filter_by(email=email).first()
+#         # filter User out of database through username
+#         user_by_email = User.query.filter_by(email=email).first()
 
-        if user or user_by_email:
-            msg = 'Error: User exists!'
+#         if user or user_by_email:
+#             msg = 'Error: User exists!'
         
-        else:         
+#         else:         
 
-            pw_hash = password #bc.generate_password_hash(password)
+#             pw_hash = password #bc.generate_password_hash(password)
 
-            user = User(username, email, pw_hash)
+#             user = User(username, email, pw_hash)
 
-            user.save()
+#             user.save()
 
-            msg = 'User created, please <a href="' + url_for('login') + '">login</a>'     
+#             msg = 'User created, please <a href="' + url_for('login') + '">login</a>'     
 
-    else:
-        msg = 'Input error'     
+#     else:
+#         msg = 'Input error'     
 
-    return render_template( 'pages/register.html', form=form, msg=msg )
+#     return render_template( 'pages/register.html', form=form, msg=msg )
 
 # Authenticate user
 # @app.route('/login.html', methods=['GET', 'POST'])
 # def login():
     
-    # cut the page for authenticated users
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
+#     # cut the page for authenticated users
+#     if current_user.is_authenticated:
+#         return redirect(url_for('index'))
 
-    # Declare the login form
-    form = LoginForm(request.form)
+#     # Declare the login form
+#     form = LoginForm(request.form)
 
-    # Flask message injected into the page, in case of any errors
-    msg = None
+#     # Flask message injected into the page, in case of any errors
+#     msg = None
 
-    # check if both http method is POST and form is valid on submit
-    if form.validate_on_submit():
+#     # check if both http method is POST and form is valid on submit
+#     if form.validate_on_submit():
 
-        # assign form data to variables
-        username = request.form.get('username', '', type=str)
-        password = request.form.get('password', '', type=str) 
+#         # assign form data to variables
+#         username = request.form.get('username', '', type=str)
+#         password = request.form.get('password', '', type=str) 
 
-        # filter User out of database through username
-        user = User.query.filter_by(user=username).first()
+#         # filter User out of database through username
+#         user = User.query.filter_by(user=username).first()
 
-        if user:
+#         if user:
             
-            #if bc.check_password_hash(user.password, password):
-            if user.password == password:
-                login_user(user)
-                return redirect(url_for('index'))
-            else:
-                msg = "Wrong password. Please try again."
-        else:
-            msg = "Unknown user"
+#             #if bc.check_password_hash(user.password, password):
+#             if user.password == password:
+#                 login_user(user)
+#                 return redirect(url_for('index'))
+#             else:
+#                 msg = "Wrong password. Please try again."
+#         else:
+#             msg = "Unknown user"
 
-    return render_template( 'pages/login.html', form=form, msg=msg )
+#     return render_template( 'pages/login.html', form=form, msg=msg )
 
 # App main route + generic routing
 @app.route('/', methods=['GET', 'POST'])
 def adder_page():
+    errors = ""
     if request.method == "POST":
         fileMetadata = None
         band4 = None
         band5 = None
         radMultBand = None
         radAddBand = None
+        pathClipBand4 = ""
+        pathClipBand5 = ""
 
         fileMetadata = request.files["fileMetadata"]
         band4 = request.files["band4"]
@@ -146,60 +150,59 @@ def adder_page():
             pathMetadata = os.path.join(app.instance_path, 'tmp', filename) 
             fileMetadata.save(pathMetadata)
             radMultBand, radAddBand = read_metadata(pathMetadata)
+            os.remove(pathMetadata)
 
         if band4 and allowed_file(band4.filename):
             filename = secure_filename(band4.filename)
             pathBand4 = os.path.join(app.instance_path, 'tmp', filename)
             band4.save(pathBand4)
-            clip_area(pathBand4, path)
+            pathClipBand4 = clip_area(pathBand4, path)
             os.remove(pathBand4)
 
         if band5 and allowed_file(band5.filename):
             filename = secure_filename(band5.filename)
             pathBand5 = os.path.join(app.instance_path, 'tmp', filename)
             band5.save(pathBand5)
-            clip_area(pathBand5, path)
+            pathClipBand5 = clip_area(pathBand5, path)
             os.remove(pathBand5)
 
         listRaster = glob.glob(path + "/*.tif")
-        reflectance, proj, geotrans, row, col = get_reflectance(listRaster, radMultBand, radAddBand)
+        reflectance = get_reflectance(listRaster, radMultBand, radAddBand)
         NDVI = get_NDVI(reflectance)
         # classNDVI = classify_NDVI(NDVI)
-        save_as_tif(NDVI, path, "/NDVI.TIF", proj, geotrans, row, col)
+        # save_as_tif(NDVI, path, "/NDVI.TIF", proj, geotrans, row, col)
         # give_color_to_tif(path, "/NDVI.TIF")
 
-        # img_path = "D:\\flask-dashboard-atlantis\\instance\\tmp\\CLIP_LC08_L1TP_119065_20190922_20190926_01_T1_B5.TIF"
-        img_path = path + "//NDVI.TIF"
-        pil_img = Image.open(img_path)
-        pil_img.mode = 'I'
-        output_path = "app\\static\\assets\\img\\NDVI.jpg"
-        pil_img.point(lambda i:i*(1./256)).convert('L').save(output_path)
-        # img_NDVI = b64encode(img_io.getvalue())
+        # img_path = path + "//NDVI.TIF"
+        norm = (NDVI.astype(np.float)-NDVI.min())*255.0 / (NDVI.max()-NDVI.min())
+        pil_img = Image.fromarray(norm)
+        output_path = "app\\static\\assets\\img\\NDVI.png"
+        pil_img.convert('L').save(output_path)
 
-        os.remove(path)
+        os.remove(pathClipBand4)
+        os.remove(pathClipBand5)
 
-        # return render_template( 'pages/index.html', img_result=img_result.decode('ascii') )
-        return render_template( 'pages/index.html', img_NDVI="\\static\\assets\\img\\NDVI.jpg" )
+        return render_template( 'pages/index.html', img_NDVI="\\static\\assets\\img\\NDVI.png" )
     return render_template( 'pages/index.html', errors=errors )
 
-@app.route('/<path>')
+# @app.route('/<path>')
 # def index(path):
 
-    if not current_user.is_authenticated:
-        return redirect(url_for('login'))
+#     if not current_user.is_authenticated:
+#         return redirect(url_for('login'))
 
-    content = None
+#     content = None
 
-    try:
+#     try:
 
-        # try to match the pages defined in -> pages/<input file>
-        return render_template( 'pages/'+path )
+#         # try to match the pages defined in -> pages/<input file>
+#         return render_template( 'pages/'+path )
     
-    except:
+#     except:
         
-        return render_template( 'pages/error-404.html' )
+#         return render_template( 'pages/error-404.html' )
 
 # Return sitemap 
-@app.route('/sitemap.xml')
-def sitemap():
-    return send_from_directory(os.path.join(app.root_path, 'static'), 'sitemap.xml')
+# @app.route('/sitemap.xml')
+# def sitemap():
+#     return send_from_directory(os.path.join(app.root_path, 'static'), 'sitemap.xml')

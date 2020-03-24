@@ -40,10 +40,10 @@ def read_metadata(pathMetadata):
 
 def get_reflectance(listRaster, radMultBand, radAddBand):
     reflectance = {}
-    proj = None
-    geotrans = None
-    row = None
-    col = None
+    # proj = None
+    # geotrans = None
+    # row = None
+    # col = None
 
     for raster in listRaster:
         gdal_dataset = gdal.Open(raster, gdal.GA_ReadOnly)
@@ -64,13 +64,14 @@ def get_reflectance(listRaster, radMultBand, radAddBand):
         #     tempKelvin[s2] = np.true_divide(k2ConstantBand[s2], np.log(np.add(np.true_divide(k1ConstantBand[s2], L[s2]), 1)))
         #     tempCelcius[s2] = np.subtract(tempKelvin[s2], 273.15)
 
-    return reflectance, proj, geotrans, row, col
+    return reflectance
 
 def clip_area(rasterPath, outputPath):
     cutline = r"D:\flask-dashboard-atlantis\shapefile\StudyArea.shp"
     filename = rasterPath.split("\\")[-1]
     output = outputPath + "/CLIP_" + filename
     os.system('gdalwarp -of GTiff -cutline  {} -cl StudyArea -crop_to_cutline {} {}'.format(cutline, rasterPath, output))
+    return output
 
 # Obtain NDVI value
 def get_NDVI(reflectance):
