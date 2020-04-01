@@ -19,11 +19,10 @@ from app.models import User
 from app.forms  import LoginForm, RegisterForm
 
 # Processing modules
-from processing import allowed_file, read_image, read_metadata, get_reflectance, clip_area, get_NDVI, classify_NDVI, save_as_tif, give_color_to_tif
+from processing import allowed_file, save_as_temporary, clip_area, get_NDVI, get_CWSI
 from io import BytesIO
 import glob
-from PIL import Image
-import numpy as np
+import pandas as pd
 
 # Encoder
 from base64 import *
@@ -130,59 +129,78 @@ def load_user(user_id):
 def adder_page():
     errors = ""
     if request.method == "POST":
-        fileMetadata = None
-        band4 = None
-        band5 = None
-        radMultBand = None
-        radAddBand = None
-        pathClipBand4 = ""
-        pathClipBand5 = ""
+        fileMetadata    = None
+        band4           = None
+        band5           = None
+        band10          = None
+        band11          = None
+        fileWaterVapor  = None
+        pathMetadata    = ""
+        pathWaterVapor  = ""
+        pathClipBand4   = ""
+        pathClipBand5   = ""
+        pathClipBand10  = ""
+        pathClipBand11  = ""
 
-        fileMetadata = request.files["fileMetadata"]
-        band4 = request.files["band4"]
-        band5 = request.files["band5"]
+        fileMetadata    = request.files["fileMetadata"]
+        band4           = request.files["band4"]
+        band5           = request.files["band5"]
+        band10          = request.files["band10"]
+        band11          = request.files["band11"]
+        fileWaterVapor  = request.files["fileWaterVapor"]
 
         path = os.path.join(app.instance_path, 'tmp')
         os.makedirs(path, exist_ok=True)
 
         if fileMetadata and allowed_file(fileMetadata.filename):
-            filename = secure_filename(fileMetadata.filename)
-            pathMetadata = os.path.join(app.instance_path, 'tmp', filename) 
-            fileMetadata.save(pathMetadata)
-            radMultBand, radAddBand = read_metadata(pathMetadata)
-            os.remove(pathMetadata)
+            pathMetadata = save_as_temporary(fileMetadata)
+        else:
+            errors += "<p>File Metadata bukan dalam format .txt</p>\n"
+
+        if fileWaterVapor:
+            pathWaterVapor = save_as_temporary(fileWaterVapor)
+        # else:
+        #     errors += "<p>File Metadata bukan dalam format .CSV</p>\n"
 
         if band4 and allowed_file(band4.filename):
-            filename = secure_filename(band4.filename)
-            pathBand4 = os.path.join(app.instance_path, 'tmp', filename)
-            band4.save(pathBand4)
+            pathBand4 = save_as_temporary(band4)
             pathClipBand4 = clip_area(pathBand4, path)
             os.remove(pathBand4)
+        else:
+            errors += "<p>File Band 4 bukan dalam format .TIF</p>\n"
 
         if band5 and allowed_file(band5.filename):
-            filename = secure_filename(band5.filename)
-            pathBand5 = os.path.join(app.instance_path, 'tmp', filename)
-            band5.save(pathBand5)
+            pathBand5 = save_as_temporary(band5)
             pathClipBand5 = clip_area(pathBand5, path)
             os.remove(pathBand5)
+        else:
+            errors += "<p>File Band 5 bukan dalam format .TIF</p>\n"
 
-        listRaster = glob.glob(path + "/*.tif")
-        reflectance = get_reflectance(listRaster, radMultBand, radAddBand)
-        NDVI = get_NDVI(reflectance)
-        # classNDVI = classify_NDVI(NDVI)
-        # save_as_tif(NDVI, path, "/NDVI.TIF", proj, geotrans, row, col)
-        # give_color_to_tif(path, "/NDVI.TIF")
+        if band10 and allowed_file(band10.filename):
+            pathBand10 = save_as_temporary(band10)
+            pathClipBand10 = clip_area(pathBand10, path)
+            os.remove(pathBand10)
+        else:
+            errors += "<p>File Band 10 bukan dalam format .TIF</p>\n"
 
-        # img_path = path + "//NDVI.TIF"
-        norm = (NDVI.astype(np.float)-NDVI.min())*255.0 / (NDVI.max()-NDVI.min())
-        pil_img = Image.fromarray(norm)
-        output_path = "app\\static\\assets\\img\\NDVI.png"
-        pil_img.convert('L').save(output_path)
+        if band11 and allowed_file(band11.filename):
+            pathBand11 = save_as_temporary(band11)
+            pathClipBand11 = clip_area(pathBand11, path)
+            os.remove(pathBand11)
+        else:
+            errors += "<p>File Band 11 bukan dalam format .TIF</p>\n"
 
+        NDVI = get_NDVI(path, pathMetadata)
+        CWSI = get_CWSI(path, pathMetadata, pathWaterVapor)
+
+        os.remove(pathMetadata)
+        os.remove(pathWaterVapor)
         os.remove(pathClipBand4)
         os.remove(pathClipBand5)
+        os.remove(pathClipBand10)
+        os.remove(pathClipBand11)
 
-        return render_template( 'pages/index.html', img_NDVI="\\static\\assets\\img\\NDVI.png" )
+        return render_template( 'pages/index.html', img_NDVI="\\static\\assets\\img\\NDVI.png", img_CWSI="\\static\\assets\\img\\CWSI.png" )
     return render_template( 'pages/index.html', errors=errors )
 
 # @app.route('/<path>')
