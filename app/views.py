@@ -12,6 +12,7 @@ from flask               import render_template, request, url_for, redirect, sen
 from flask_login         import login_user, logout_user, current_user, login_required
 from werkzeug.exceptions import HTTPException, NotFound, abort
 from werkzeug.utils      import secure_filename
+from flask_mysqldb       import MySQL
 
 # App modules
 from app        import app, lm, db, bc
@@ -26,6 +27,12 @@ import pandas as pd
 
 # Encoder
 from base64 import *
+
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = ''
+app.config['MYSQL_DB'] = 'sugarcane_monitoring'
+mysql = MySQL(app)
 
 # provide login manager with load_user callback
 @lm.user_loader
@@ -126,8 +133,13 @@ def load_user(user_id):
 
 # App main route + generic routing
 @app.route('/', methods=['GET', 'POST'])
-def adder_page():
+def home():
     errors = ""
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM cwsi")
+    rv = cur.fetchall()
+    cur.close()
+
     if request.method == "POST":
         fileMetadata    = None
         band4           = None
@@ -201,7 +213,7 @@ def adder_page():
         os.remove(pathClipBand11)
 
         return render_template( 'pages/index.html', img_NDVI="\\static\\assets\\img\\NDVI.png", img_CWSI="\\static\\assets\\img\\CWSI.png" )
-    return render_template( 'pages/index.html', errors=errors )
+    return render_template( 'pages/index.html', errors=errors, cwsi=rv)
 
 # @app.route('/<path>')
 # def index(path):

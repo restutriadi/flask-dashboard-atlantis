@@ -20,92 +20,178 @@
       </div>
     </div>
     <div class="page-inner mt--5">
+
       <div class="row mt--2">
         <div class="col-md-4">
-          <div class="card">
-            <div class="card-header">
-              <h4 class="card-title">Citra Landsat 8</h4>
-            </div>
-            <form method="POST" enctype="multipart/form-data" action="">
-              <div class="card-body">
-                <div class="form-group">
-                  <label for="">Metadata File (LC08 - MTL.txt)</label>
-                  <input type="file" class="form-control-file" id="fileMetadata" name="fileMetadata">
-                </div>
-                <div class="form-group">
-                  <label for="">Band 4 (LC08 - B4.TIF)</label>
-                  <input type="file" class="form-control-file" id="band4" name="band4">
-                </div>
-                <div class="form-group">
-                  <label for="">Band 5 (LC08 - B5.TIF)</label>
-                  <input type="file" class="form-control-file" id="band5" name="band5">
-                </div>
-                <div class="form-group">
-                  <label for="">Band 10 (LC08 - B10.TIF)</label>
-                  <input type="file" class="form-control-file" id="band10" name="band10">
-                </div>
-                <div class="form-group">
-                  <label for="">Band 11 (LC08 - B11.TIF)</label>
-                  <input type="file" class="form-control-file" id="band11" name="band11">
-                </div>
-                <div class="form-group">
-                  <label for="">Water Vapor File (MYDAL2 - 1440x720.SS.CSV)</label>
-                  <input type="file" class="form-control-file" id="fileWaterVapor" name="fileWaterVapor">
-                </div>
-              </div>
-              <div class="card-action">
-                <button class="btn btn-success" type="submit">Submit</button>
-              </div>
-            </form>
-          </div>
-        </div>
-        <!-- <div class="col-md-4">
-          <div class="card">
-            <div class="card-header">
-                <h4 class="card-title">Lahan Perkebunan</h4>
-            </div>
-            <div class="card-body">
-                <img src="/static/assets/img/Kebun.png" alt="Original" style="width: 100%;">
-            </div>
-          </div>
-        </div> -->
-        <div class="col-md-8">
           <div class="card full-height">
             <div class="card-header">
-                <h4 class="card-title">Hasil Analisis</h4>
+              <div class="card-head-row">
+                <div class="card-title">CWSI</div>
+                <div class="card-tools">
+                  <ul class="nav nav-pills nav-secondary" id="pills-tab" role="tablist">
+                    <li class="nav-item">
+                      <a class="nav-link active" id="pills-database-tab" data-toggle="pill" href="#pills-database" role="tab" aria-selected="true">Database</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="pills-input-tab" data-toggle="pill" href="#pills-input" role="tab" aria-selected="false">Input</a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
-            <div class="card-body">
-                <ul class="nav nav-pills nav-secondary nav-pills-no-bd" id="pills-tab-without-border" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" id="kebun-tab" data-toggle="pill" href="#kebun" role="tab" aria-controls="" aria-selected="true">Kebun</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="NDVI-tab" data-toggle="pill" href="#NDVI" role="tab" aria-controls="" aria-selected="false">NDVI</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="CWSI-tab" data-toggle="pill" href="#CWSI" role="tab" aria-controls="" aria-selected="false">CWSI</a>
-                    </li>
-                </ul>
-                <div class="row">
-                  <div class="col-md-8">
-                    <div class="tab-content mt-2 mb-3" id="pills-without-border-tabContent">
-                        <div class="tab-pane fade show active" id="kebun" role="tabpanel" aria-labelledby="">
-                            <img src="/static/assets/img/Kebun.png" alt="" style="width: 100%;">
-                        </div>
-                        <div class="tab-pane fade" id="NDVI" role="tabpanel" aria-labelledby="">
-                            <img src="{{img_NDVI}}" alt="" style="width: 100%;">
-                        </div>
-                        <div class="tab-pane fade" id="CWSI" role="tabpanel" aria-labelledby="">
-                            <img src="{{img_CWSI}}" alt="" style="width: 100%;">
-                        </div>
-                    </div>
+            <div class="tab-content" id="pills-tabContent">
+              <div class="tab-pane fade show active" id="pills-database" role="tabpanel" aria-labelledby="pills-database-tab">
+                <div class="card-body">
+                  <div class="table-responsive">
+                      <table id="add-row" class="display table table-striped table-hover" style="margin-top: -15px !important;">
+                          <thead>
+                              <tr>
+                                  <th>Tanggal</th>
+                                  <th style="width: 10%; text-align: center;">Action</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                            {% for data in cwsi %}
+                            <tr>
+                              <td>{{data.1}}</td>
+                              <td>
+                                <div class="form-button-action">
+                                    <button type="button" data-toggle="tooltip" title="" class="btn btn-link btn-primary btn-lg" data-original-title="Lihat">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                      <button type="button" data-toggle="tooltip" title="" class="btn btn-link btn-danger" data-original-title="Hapus">
+                                          <i class="fa fa-times"></i>
+                                      </button>
+                                </div>
+                              </td>
+                            </tr>
+                            {% endfor %}
+                          </tbody>
+                      </table>
                   </div>
                 </div>
-                
+              </div>
+              <div class="tab-pane fade" id="pills-input" role="tabpanel" aria-labelledby="pills-input-tab">
+                <form method="POST" enctype="multipart/form-data" action="">
+                  <div class="card-body">
+                    <div class="form-group">
+                      <label for="">File Metadata</label>
+                      <input type="file" class="form-control-file" id="fileMetadata" name="fileMetadata">
+                    </div>
+                    <div class="form-group">
+                      <label for="">Citra Band 4</label>
+                      <input type="file" class="form-control-file" id="band4" name="band4">
+                    </div>
+                    <div class="form-group">
+                      <label for="">Citra Band 5</label>
+                      <input type="file" class="form-control-file" id="band5" name="band5">
+                    </div>
+                    <div class="form-group">
+                      <label for="">Citra Band 10</label>
+                      <input type="file" class="form-control-file" id="band10" name="band10">
+                    </div>
+                    <div class="form-group">
+                      <label for="">Citra Band 11</label>
+                      <input type="file" class="form-control-file" id="band11" name="band11">
+                    </div>
+                    <div class="form-group">
+                      <label for="">File Water Vapor</label>
+                      <input type="file" class="form-control-file" id="fileWaterVapor" name="fileWaterVapor">
+                    </div>
+                  </div>
+                  <div class="card-action">
+                    <button class="btn btn-success" type="submit">Submit</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="row">
+            <div class="col-4">
+              <div class="card full-height">
+                  <div class="card-body p-3 text-center">
+                      <div class="text-right text-white">
+                          6%
+                          <i class="fa fa-chevron-up"></i>
+                      </div>
+                      <div class="h1 m-0">300 ha</div>
+                      <div class="text-muted mb-3">Lahan Irigasi Tebu</div>
+                  </div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="card">
+                  <div class="card-body p-3 text-center">
+                      <div class="text-right text-danger">
+                          6%
+                          <i class="fa fa-chevron-up"></i>
+                      </div>
+                      <div class="h1 m-0">43</div>
+                      <div class="text-muted mb-3">Titik Kekeringan</div>
+                  </div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="card">
+                  <div class="card-body p-3 text-center">
+                      <div class="text-right text-success">
+                          -3%
+                          <i class="fa fa-chevron-down"></i>
+                      </div>
+                      <div class="h1 m-0">78 ha</div>
+                      <div class="text-muted mb-3">Area Water Stress</div>
+                  </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div class="">
+                <img src="/static/assets/img/Kebun_Original_Fix.jpg" alt="" style="width: 100%;">
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card">
+              <div class="card-header">
+                <div class="card-head-row">
+                  <div class="card-title">Grafik CWSI</div>
+                  <div class="card-tools">
+                    <ul class="nav nav-pills nav-secondary nav-pills-no-bd" id="pills-tab" role="tablist">
+                      <li class="nav-item">
+                          <a class="nav-link active" id="pills-lahanA-tab" data-toggle="pill" href="#pills-lahanA" role="tab" aria-selected="true">Lahan A</a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" id="pills-lahanB-tab" data-toggle="pill" href="#pills-lahanB" role="tab" aria-selected="false">Lahan B</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>`
+              <div class="tab-content" id="pills-tabContent">
+                <div class="tab-pane fade show active" id="pills-lahanA" role="tabpanel" aria-labelledby="pills-lahanA-tab">
+                  <div class="card-body">
+                    <div class="chart-container">
+                      <canvas id="multipleLineChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+                <div class="tab-pane fade" id="pills-lahanB" role="tabpanel" aria-labelledby="pills-lahanB-tab">
+                  <div class="card-body">
+                    <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Eos laboriosam assumenda velit eum sed repellendus, commodi dolore reiciendis fugit cumque unde voluptas a quos facilis excepturi, adipisci dicta? Vel, fugit?</p>
+                  </div>
+                </div>
+              </div>
+          </div>
+        </div>
+      </div>
+
       <!-- <div class="row mt--2">
         <div class="col-md-6">
           <div class="card full-height">
@@ -365,102 +451,75 @@
 {% endblock content %}
 
 {% block javascripts %}
+  <!-- Chart JS -->
+  <script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
+
+  <!-- Datatables -->
+	<script src="/static/assets/js/plugin/datatables/datatables.min.js"></script>
 
 	<script src="/static/assets/js/demo.js"></script>
 
 	<script>
-		Circles.create({
-			id:'circles-1',
-			radius:45,
-			value:60,
-			maxValue:100,
-			width:7,
-			text: 5,
-			colors:['#f1f1f1', '#FF9E27'],
-			duration:400,
-			wrpClass:'circles-wrp',
-			textClass:'circles-text',
-			styleWrapper:true,
-			styleText:true
-		})
+    $('#add-row').DataTable({
+      "searching": false,   // Search Box will Be Disabled
+      "info": false,         // Will show "1 to n of n entries" Text at bottom
+      "lengthChange": false, // Will Disabled Record number per page
+      "pageLength": 6
+    });
 
-		Circles.create({
-			id:'circles-2',
-			radius:45,
-			value:70,
-			maxValue:100,
-			width:7,
-			text: 36,
-			colors:['#f1f1f1', '#2BB930'],
-			duration:400,
-			wrpClass:'circles-wrp',
-			textClass:'circles-text',
-			styleWrapper:true,
-			styleText:true
-		})
-
-		Circles.create({
-			id:'circles-3',
-			radius:45,
-			value:40,
-			maxValue:100,
-			width:7,
-			text: 12,
-			colors:['#f1f1f1', '#F25961'],
-			duration:400,
-			wrpClass:'circles-wrp',
-			textClass:'circles-text',
-			styleWrapper:true,
-			styleText:true
-		})
-
-		var totalIncomeChart = document.getElementById('totalIncomeChart').getContext('2d');
-
-		var mytotalIncomeChart = new Chart(totalIncomeChart, {
-			type: 'bar',
+    multipleLineChart = document.getElementById('multipleLineChart').getContext('2d');
+    var myMultipleLineChart = new Chart(multipleLineChart, {
+			type: 'line',
 			data: {
-				labels: ["S", "M", "T", "W", "T", "F", "S", "S", "M", "T"],
-				datasets : [{
-					label: "Total Income",
-					backgroundColor: '#ff9e27',
-					borderColor: 'rgb(23, 125, 255)',
-					data: [6, 4, 9, 5, 4, 6, 4, 3, 8, 10],
-				}],
+				labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+				datasets: [{
+					label: "Aktual",
+					borderColor: "#1d7af3",
+					pointBorderColor: "#FFF",
+					pointBackgroundColor: "#1d7af3",
+					pointBorderWidth: 2,
+					pointHoverRadius: 4,
+					pointHoverBorderWidth: 1,
+					pointRadius: 4,
+					backgroundColor: 'transparent',
+					fill: true,
+					borderWidth: 2,
+					data: [30, 45, 45, 68, 69, 90, 100, 158, 177, 200, 245, 256]
+				},{
+					label: "Prediksi",
+					borderColor: "#f3545d",
+					pointBorderColor: "#FFF",
+					pointBackgroundColor: "#f3545d",
+					pointBorderWidth: 2,
+					pointHoverRadius: 4,
+					pointHoverBorderWidth: 1,
+					pointRadius: 4,
+					backgroundColor: 'transparent',
+					fill: true,
+					borderWidth: 2,
+					data: [10, 30, 58, 79, 90, 105, 117, 160, 185, 210, 185, 194]
+				}]
 			},
-			options: {
-				responsive: true,
+			options : {
+				responsive: true, 
 				maintainAspectRatio: false,
 				legend: {
-					display: false,
+					position: 'top',
 				},
-				scales: {
-					yAxes: [{
-						ticks: {
-							display: false //this will remove only the label
-						},
-						gridLines : {
-							drawBorder: false,
-							display : false
-						}
-					}],
-					xAxes : [ {
-						gridLines : {
-							drawBorder: false,
-							display : false
-						}
-					}]
+				tooltips: {
+					bodySpacing: 4,
+					mode:"nearest",
+					intersect: 0,
+					position:"nearest",
+					xPadding:10,
+					yPadding:10,
+					caretPadding:10
 				},
+				layout:{
+					padding:{left:15,right:15,top:15,bottom:15}
+				}
 			}
 		});
-
-		$('#lineChart').sparkline([105,103,123,100,95,105,115], {
-			type: 'line',
-			height: '70',
-			width: '100%',
-			lineWidth: '2',
-			lineColor: '#ffa534',
-			fillColor: 'rgba(255, 165, 52, .14)'
-		});
-	</script>
+  </script>
 
 {% endblock javascripts %}
