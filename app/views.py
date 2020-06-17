@@ -20,7 +20,7 @@ from app.models import User
 from app.forms  import LoginForm, RegisterForm
 
 # Processing modules
-from processing import allowed_file, save_as_temporary, clip_area, get_NDVI, get_CWSI
+from processing import allowed_file, save_as_temporary, clip_area, get_NDVI, get_CWSI, get_drought_monitoring, predict_two_month
 from io import BytesIO
 import glob
 import pandas as pd
@@ -136,10 +136,23 @@ def load_user(user_id):
 def home():
     errors = ""
     cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM citra_cwsi")
+    citra_cwsi = cur.fetchall()
+    cur.execute("SELECT * FROM citra_cwsi ORDER BY filename DESC LIMIT 2")
+    last_two_month_data = cur.fetchall()
     cur.execute("SELECT * FROM cwsi")
-    rv = cur.fetchall()
+    cwsi = cur.fetchall()
     cur.close()
 
+    red_pixel_percent, drought_area_percent = get_drought_monitoring(last_two_month_data)
+    label = []
+    actual = []
+    for i in cwsi:
+        label.append(i[1][:-2])
+        actual.append(i[2])
+    predict = predict_two_month(cwsi).tolist()
+    for i in range(1, 4):
+        label.append('prediksi'+str(i))
     if request.method == "POST":
         fileMetadata    = None
         band4           = None
@@ -202,8 +215,15 @@ def home():
         else:
             errors += "<p>File Band 11 bukan dalam format .TIF</p>\n"
 
-        NDVI = get_NDVI(path, pathMetadata)
-        CWSI = get_CWSI(path, pathMetadata, pathWaterVapor)
+        # NDVI = get_NDVI(path, pathMetadata)
+        img_name, img_path, red_px, orange_px = get_CWSI(fileMetadata.filename, path, pathMetadata, pathWaterVapor)
+
+        cur = mysql.connection.cursor()
+        cur.execute("INSERT INTO citra_cwsi(filename, path, red_pixel, orange_pixel) VALUES (%s, %s, %s, %s)", (img_name, img_path, red_px, orange_px))
+        mysql.connection.commit()
+        cur.execute("SELECT * FROM citra_cwsi")
+        citra_cwsi = cur.fetchall()
+        cur.close()
 
         os.remove(pathMetadata)
         os.remove(pathWaterVapor)
@@ -212,8 +232,9 @@ def home():
         os.remove(pathClipBand10)
         os.remove(pathClipBand11)
 
-        return render_template( 'pages/index.html', img_NDVI="\\static\\assets\\img\\NDVI.png", img_CWSI="\\static\\assets\\img\\CWSI.png" )
-    return render_template( 'pages/index.html', errors=errors, cwsi=rv)
+        return render_template('pages/index.html', errors=errors, cwsi=citra_cwsi, red_px_last_month=red_px_last_month)
+    return render_template('pages/index.html', errors=errors, cwsi=citra_cwsi, last_two_month=last_two_month_data, red_pixel_percent=float(red_pixel_percent), drought_area_percent=float(drought_area_percent),
+                            tanggal=label, actual=actual, predict=predict)
 
 # @app.route('/<path>')
 # def index(path):

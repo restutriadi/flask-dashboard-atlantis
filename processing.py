@@ -2,7 +2,7 @@
 from werkzeug.utils      import secure_filename
 
 # App modules
-from app        import app
+from app                 import app
 
 # Processing modules
 import glob
@@ -10,9 +10,13 @@ import numpy as np
 import os
 import pandas as pd
 import statistics
-from os     import system
-from osgeo  import gdal
-from PIL    import Image
+import math
+from os                  import system
+from osgeo               import gdal
+from pandas              import DataFrame
+from PIL                 import Image
+from sklearn             import metrics
+from sklearn.ensemble    import RandomForestRegressor
 
 # Return TRUE if uploaded file is in txt/TIF format
 ALLOWED_EXTENSIONS = set(['txt', 'TIF'])
@@ -30,10 +34,10 @@ def save_as_temporary(inputFile):
 
 # Clip input raster with farm shapefile to obtain area of study
 def clip_area(rasterPath, outputPath):
-    cutline = r"D:\flask-dashboard-atlantis\shapefile\StudyArea.shp"
+    cutline = r"D:\flask-dashboard-atlantis\shapefile\\Lahan300.shp"
     filename = rasterPath.split("\\")[-1]
     output = outputPath + "/CLIP_" + filename
-    os.system('gdalwarp -of GTiff -cutline  {} -cl StudyArea -crop_to_cutline {} {}'.format(cutline, rasterPath, output))
+    os.system('gdalwarp -of GTiff -cutline  {} -cl Lahan300 -crop_to_cutline {} {}'.format(cutline, rasterPath, output))
     return output
 
 # Get radiance multiplication and add constant from metadata file
@@ -41,19 +45,22 @@ def get_metadata(pathMetadata):
     f = open(pathMetadata, 'r')
     radMultBand = {}
     radAddBand = {}
+    refMultBand = {}
+    refAddBand = {}
     k1ConstantBand = {}
     k2ConstantBand = {}
+    sunElevation = 0
 
     for line in f:
         if (line.find ("RADIANCE_MULT_BAND") >= 0 ):
-            s = line.split("=") # Split by equal sign
-            the_band = int(s[0].split("_")[3]) # Band number as integer
-            if the_band in [4, 5, 10, 11]: # Is this one of the bands we want?
-                radMultBand[the_band] = float ( s[-1] ) # Get constant as float
+            s = line.split("=")
+            the_band = int(s[0].split("_")[3])
+            if the_band in [10, 11]:
+                radMultBand[the_band] = float ( s[-1] )
         elif (line.find ("RADIANCE_ADD_BAND") >= 0 ):
             s = line.split("=")
             the_band = int(s[0].split("_")[3])
-            if the_band in [4, 5, 10, 11]:
+            if the_band in [10, 11]:
                 radAddBand[the_band] = float ( s[-1] )
         elif (line.find ("K1_CONSTANT_BAND") >= 0 ):
             s = line.split("=")
@@ -65,47 +72,55 @@ def get_metadata(pathMetadata):
             the_band = int(s[0].split("_")[3])
             if the_band in [10, 11]:
                 k2ConstantBand[the_band] = float ( s[-1] )
+        elif (line.find ("REFLECTANCE_MULT_BAND") >= 0 ):
+            s = line.split("=")
+            the_band = int(s[0].split("_")[3])
+            if the_band in [4, 5]:
+                refMultBand[the_band] = float ( s[-1] )
+        elif (line.find ("REFLECTANCE_ADD_BAND") >= 0 ):
+            s = line.split("=")
+            the_band = int(s[0].split("_")[3])
+            if the_band in [4, 5]:
+                refAddBand[the_band] = float ( s[-1] )
+        elif (line.find ("SUN_ELEVATION") >= 0 ):
+            s = line.split("=")
+            sunElevation = float ( s[-1] )
 
-    return radMultBand, radAddBand, k1ConstantBand, k2ConstantBand
+    return radMultBand, radAddBand, refMultBand, refAddBand, k1ConstantBand, k2ConstantBand, sunElevation
 
 # Get Top of Atmosphere (TOA) spectral radiance from input raster
 # with obtained radiance constant from metadata file
-def get_reflectance(listRaster, pathMetadata):
+def get_radiance(listRaster, pathMetadata):
+    radiance = {}
     reflectance = {}
     tempKelvin = {}
     tempCelcius = {}
-    radMultBand, radAddBand, k1ConstantBand, k2ConstantBand = get_metadata(pathMetadata)
-    # proj = None
-    # geotrans = None
-    # row = None
-    # col = None
+    radMultBand, radAddBand, refMultBand, refAddBand, k1ConstantBand, k2ConstantBand, sunElevation = get_metadata(pathMetadata)
 
     for raster in listRaster:
         gdal_dataset = gdal.Open(raster, gdal.GA_ReadOnly)
         rasterBand = np.array(gdal_dataset.GetRasterBand(1).ReadAsArray())
-        
-        # proj     = gdal_dataset.GetProjection()
-        # geotrans = gdal_dataset.GetGeoTransform()
-        # row      = gdal_dataset.RasterYSize
-        # col      = gdal_dataset.RasterXSize
 
-        # Convert Digital Numbers (DN) to Top of Atmosphere (TOA) spectral radiance
         s1 = raster.split("\\")[-1]                         # Split to obtain file name
         s2 = int(s1.split("_")[-1].split(".")[0][1:])       # Split to obtain band number as integer
-        reflectance[s2] = np.add(np.multiply(rasterBand, radMultBand[s2]), radAddBand[s2])
 
-        # Obtain at-satellite brightness temperature for band 10 and 11
         if s2 in [10, 11]:
-            tempKelvin[s2] = np.true_divide(k2ConstantBand[s2], np.log(np.add(np.true_divide(k1ConstantBand[s2], reflectance[s2]), 1)))
+            # Convert Digital Numbers (DN) to Top Of Atmosphere (TOA) Radiance
+            radiance[s2] = np.add(np.multiply(rasterBand, radMultBand[s2]), radAddBand[s2])
+            # Obtain at-satellite brightness temperature for band 10 and 11
+            tempKelvin[s2] = np.true_divide(k2ConstantBand[s2], np.log(np.add(np.true_divide(k1ConstantBand[s2], radiance[s2]), 1)))
             tempCelcius[s2] = np.subtract(tempKelvin[s2], 273.15)
+        elif s2 in [4, 5]:
+            # Convert Digital Numbers (DN) to Top Of Atmosphere (TOA) Radiance
+            reflectance[s2] = np.true_divide(np.add(np.multiply(rasterBand, refMultBand[s2]), refAddBand[s2]), math.sin(sunElevation))
 
-    return reflectance, tempCelcius
+    return radiance, reflectance, tempCelcius
 
 # Obtain NDVI value and save the result as an image in PNG
 # Return NDVI as numpy array
 def get_NDVI(path, pathMetadata):
     listRaster = glob.glob(path + "/*.tif")
-    reflectance, tempCelcius = get_reflectance(listRaster, pathMetadata)
+    radiance, reflectance, tempCelcius = get_radiance(listRaster, pathMetadata)
     NDVI = np.true_divide(np.subtract(reflectance[5], reflectance[4]), np.add(reflectance[5], reflectance[4]))
     # classNDVI = classify_NDVI(NDVI)
     # save_as_tif(NDVI, path, "/NDVI.TIF", proj, geotrans, row, col)
@@ -120,15 +135,15 @@ def get_NDVI(path, pathMetadata):
     return NDVI
 
 # Obtain CWSI value
-def get_CWSI(path, pathMetadata, pathWaterVapor):
+def get_CWSI(filename, path, pathMetadata, pathWaterVapor):
     listRaster = glob.glob(path + "/*.tif")
-    reflectance, tempCelcius = get_reflectance(listRaster, pathMetadata)
+    radiance, reflectance, tempCelcius = get_radiance(listRaster, pathMetadata)
     NDVI = np.true_divide(np.subtract(reflectance[5], reflectance[4]), np.add(reflectance[5], reflectance[4]))
     
     # Obtain emissivity (E) from NDVI Threshold-Based Models (Skokovic et al.)
     Pv = np.power(np.true_divide(np.subtract(NDVI, 0.2), 0.3), 2)
-    E10 = np.zeros((275, 257))
-    E11 = np.zeros((275, 257))
+    E10 = np.zeros((50, 78))
+    E11 = np.zeros((50, 78))
     for i in range(len(NDVI)):
         for j in range(len(NDVI[i])):
             if NDVI[i][j] < 0.2:
@@ -143,7 +158,7 @@ def get_CWSI(path, pathMetadata, pathWaterVapor):
     
     # Get water vapor content
     df = pd.read_csv(pathWaterVapor)
-    w = df.iloc[328]["112.125"]
+    w = df.iloc[978][2922]
 
     # Calculate tau 10 and 11 based on mid-latitude summer region model
     tau10 = -0.0164*(w**2) - 0.04203*w + 0.9715
@@ -162,43 +177,100 @@ def get_CWSI(path, pathMetadata, pathWaterVapor):
     B1 = np.true_divide(C10, np.subtract(np.multiply(C11, A10), np.multiply(C10, A11)))
     LST = np.add(tempCelcius[10], np.add(np.multiply(B1, np.subtract(tempCelcius[10], tempCelcius[11])), B0))
 
-    # Obtain hot and cold pixel value
-    coldNDVI = []
-    hotNDVI = []
-    countCold = 0
-    countHot = 0
+    # # Obtain hot and cold pixel value
+    # coldNDVI = []
+    # hotNDVI = []
+    # countCold = 0
+    # countHot = 0
 
-    for i in range(len(NDVI)):
-        for j in range(len(NDVI[i])):
-            if NDVI[i][j] > 0.2:
-                hotNDVI.append(LST[i][j])
-                countHot += 1
-            if NDVI[i][j] > 0.5:
-                coldNDVI.append(LST[i][j])
-                countCold += 1
+    # for i in range(len(NDVI)):
+    #     for j in range(len(NDVI[i])):
+    #         if NDVI[i][j] > 0.2:
+    #             hotNDVI.append(LST[i][j])
+    #             countHot += 1
+    #         if NDVI[i][j] > 0.5:
+    #             coldNDVI.append(LST[i][j])
+    #             countCold += 1
 
-    coldNDVI.sort()
-    hotNDVI.sort(reverse = True)
+    # coldNDVI.sort()
+    # hotNDVI.sort(reverse = True)
 
-    if countCold == 0:
-        coldPixel = 0
-    else:
-        coldPixel = statistics.median(coldNDVI[0:countCold//10])
+    # if countCold == 0:
+    #     coldPixel = 0
+    # else:
+    #     coldPixel = statistics.median(coldNDVI[0:countCold//10])
 
-    if countHot == 0:
-        hotPixel = 0
-    else:
-        hotPixel = statistics.median(hotNDVI[0:countHot//10])
+    # if countHot == 0:
+    #     hotPixel = 0
+    # else:
+    #     hotPixel = statistics.median(hotNDVI[0:countHot//10])
 
     # Obtain CWSI
-    CWSI = np.true_divide(np.subtract(LST, coldPixel), (hotPixel - coldPixel))
+    # CWSI = np.true_divide(np.subtract(LST, coldPixel), (hotPixel - coldPixel))
+    CWSI = np.true_divide(np.subtract(LST, LST.min()), (LST.max() - LST.min()))
 
-    norm = (CWSI.astype(np.float)-CWSI.min())*255.0 / (CWSI.max()-CWSI.min())
-    pil_img = Image.fromarray(norm)
-    output_path = "app\\static\\assets\\img\\CWSI.png"
-    pil_img.convert('L').save(output_path)
+    img = Image.new( 'RGB', (78,50), "black") # create a new black image
+    pixels = img.load() # create the pixel map
+    red_px = 0
+    orange_px = 0
 
-    return pathWaterVapor
+    for i in range(img.size[0]):    # for every col:
+        for j in range(img.size[1]):    # for every row:
+            if CWSI[j, i] < 0.2:
+                pixels[i, j] = (70, 167, 177)
+            elif CWSI[j, i] < 0.4:
+                pixels[i, j] = (171, 221, 164)
+            elif CWSI[j, i] < 0.6:
+                pixels[i, j] = (255, 255, 191)
+            elif CWSI[j, i] < 0.8:
+                pixels[i, j] = (253, 174, 97)
+                orange_px += 1
+            else:
+                pixels[i, j] = (215, 25, 28)
+                red_px += 1
+
+    tanggal = filename.split("_")[3]
+    output_path = "app\\static\\assets\\img\\cwsi\\" + tanggal + ".png"
+    output_path_db = "/static/assets/img/cwsi/" + tanggal + ".png"
+    img.save(output_path, 'PNG', compress_level=0)
+
+    return tanggal, output_path_db, red_px, orange_px
+
+# Obtain red pixel and drought area change percentage since last month
+def get_drought_monitoring(last_two_month_data):
+    red_pixel_percent = (last_two_month_data[0][3] - last_two_month_data[1][3])*100 / last_two_month_data[1][3]
+    pixel_drought_this_month = last_two_month_data[0][3] + last_two_month_data[0][4]
+    pixel_drought_last_month = last_two_month_data[1][3] + last_two_month_data[1][4]
+    drought_area_percent = (pixel_drought_this_month - pixel_drought_last_month)*100 / pixel_drought_last_month
+    return "{:.2f}".format(red_pixel_percent), "{:.2f}".format(drought_area_percent*900/10000)
+
+def predict_two_month(cwsi):
+    list1 = []
+    list2 = []
+    for i in cwsi:
+        list1.append(i[2])
+        list2.append(i[3])
+    dataframe1 = DataFrame()
+    dataframe2 = DataFrame()
+    for i in range(1,0,-1):
+        dataframe1['CWSI-'+str(i)] = pd.Series(list1).shift(i)
+        dataframe2['CWSI-'+str(i)] = pd.Series(list2).shift(i)
+    dataframe1['CWSI'] = pd.Series(list1).shift(-1)
+    dataframe2['CWSI'] = pd.Series(list2).shift(-1)
+    dataframe1 = dataframe1.dropna()
+    row = len(dataframe1.index)
+    dataframe2 = dataframe2.dropna()
+    df_row_reindex = pd.concat([dataframe1, dataframe2], ignore_index=True)
+
+    array = df_row_reindex.values
+    X = array[:,0:1]
+    y = array[:,-1]
+    regressor = RandomForestRegressor(n_estimators=400, random_state=1)
+    regressor.fit(X, y)
+    y_pred = regressor.predict(np.array(list1).reshape(-1,1))
+    for i in range(0, 2):
+        y_pred = np.insert(y_pred, 0, np.nan)
+    return y_pred
 
 # Classify
 def classify_NDVI(data):
