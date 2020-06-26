@@ -151,8 +151,9 @@ def home():
         label.append(i[1][:-2])
         actual.append(i[2])
     predict = predict_two_month(cwsi).tolist()
-    for i in range(1, 4):
-        label.append('prediksi'+str(i))
+    label.append("201901")
+    label.append("201902")
+    label.append("201903")
     if request.method == "POST":
         fileMetadata    = None
         band4           = None
@@ -223,7 +224,22 @@ def home():
         mysql.connection.commit()
         cur.execute("SELECT * FROM citra_cwsi")
         citra_cwsi = cur.fetchall()
+        cur.execute("SELECT * FROM citra_cwsi ORDER BY filename DESC LIMIT 2")
+        last_two_month_data = cur.fetchall()
+        cur.execute("SELECT * FROM cwsi")
+        cwsi = cur.fetchall()
         cur.close()
+
+        red_pixel_percent, drought_area_percent = get_drought_monitoring(last_two_month_data)
+        label = []
+        actual = []
+        for i in cwsi:
+            label.append(i[1][:-2])
+            actual.append(i[2])
+        predict = predict_two_month(cwsi).tolist()
+        label.append("201901")
+        label.append("201902")
+        label.append("201903")
 
         os.remove(pathMetadata)
         os.remove(pathWaterVapor)
@@ -232,8 +248,11 @@ def home():
         os.remove(pathClipBand10)
         os.remove(pathClipBand11)
 
-        return render_template('pages/index.html', errors=errors, cwsi=citra_cwsi, red_px_last_month=red_px_last_month)
-    return render_template('pages/index.html', errors=errors, cwsi=citra_cwsi, last_two_month=last_two_month_data, red_pixel_percent=float(red_pixel_percent), drought_area_percent=float(drought_area_percent),
+        return render_template('pages/index.html', errors=errors, cwsi=citra_cwsi, last_two_month=last_two_month_data,
+                                red_pixel_percent=float(red_pixel_percent), drought_area_percent=float(drought_area_percent),
+                                tanggal=label, actual=actual, predict=predict)
+    return render_template('pages/index.html', errors=errors, cwsi=citra_cwsi, last_two_month=last_two_month_data, 
+                            red_pixel_percent=float(red_pixel_percent), drought_area_percent=float(drought_area_percent),
                             tanggal=label, actual=actual, predict=predict)
 
 # @app.route('/<path>')

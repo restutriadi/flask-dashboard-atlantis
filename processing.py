@@ -159,6 +159,8 @@ def get_CWSI(filename, path, pathMetadata, pathWaterVapor):
     # Get water vapor content
     df = pd.read_csv(pathWaterVapor)
     w = df.iloc[978][2922]
+    if w > 10:
+        w = 3.86
 
     # Calculate tau 10 and 11 based on mid-latitude summer region model
     tau10 = -0.0164*(w**2) - 0.04203*w + 0.9715

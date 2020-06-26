@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 17, 2020 at 11:29 AM
+-- Generation Time: Jun 26, 2020 at 06:04 AM
 -- Server version: 10.1.37-MariaDB
 -- PHP Version: 7.2.12
 
@@ -43,7 +43,9 @@ CREATE TABLE `citra_cwsi` (
 INSERT INTO `citra_cwsi` (`id`, `filename`, `path`, `red_pixel`, `orange_pixel`) VALUES
 (11, '20190720', '/static/assets/img/cwsi/20190720.png', 259, 540),
 (12, '20190805', '/static/assets/img/cwsi/20190805.png', 222, 753),
-(13, '20190618', '/static/assets/img/cwsi/20190618.png', 67, 277);
+(13, '20190618', '/static/assets/img/cwsi/20190618.png', 67, 277),
+(16, '20181208', '/static/assets/img/cwsi/20181208.png', 82, 436),
+(17, '20171103', '/static/assets/img/cwsi/20171103.png', 752, 1458);
 
 -- --------------------------------------------------------
 
@@ -138,7 +140,7 @@ ALTER TABLE `ndvi`
 -- AUTO_INCREMENT for table `citra_cwsi`
 --
 ALTER TABLE `citra_cwsi`
-  MODIFY `id` int(50) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(50) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `cwsi`
