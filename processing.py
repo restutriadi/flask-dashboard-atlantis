@@ -236,7 +236,29 @@ def get_CWSI(filename, path, pathMetadata, pathWaterVapor):
     output_path_db = "/static/assets/img/cwsi/" + tanggal + ".png"
     img.save(output_path, 'PNG', compress_level=0)
 
-    return tanggal, output_path_db, red_px, orange_px
+    ndvi_a1 = NDVI[9][36]
+    ndvi_a2 = NDVI[8][44]
+    ndvi_b1 = NDVI[14][49]
+    ndvi_b2 = NDVI[14][58]
+    ndvi_c1 = NDVI[30][28]
+    ndvi_c2 = NDVI[30][39]
+    ndvi_d1 = NDVI[24][39]
+    ndvi_d2 = NDVI[30][53]
+    ndvi_e1 = NDVI[38][17]
+    ndvi_e2 = NDVI[37][24]
+
+    cwsi_a1 = CWSI[9][36]
+    cwsi_a2 = CWSI[8][44]
+    cwsi_b1 = CWSI[14][49]
+    cwsi_b2 = CWSI[14][58]
+    cwsi_c1 = CWSI[30][28]
+    cwsi_c2 = CWSI[30][39]
+    cwsi_d1 = CWSI[24][39]
+    cwsi_d2 = CWSI[30][53]
+    cwsi_e1 = CWSI[38][17]
+    cwsi_e2 = CWSI[37][24]
+
+    return tanggal, output_path_db, red_px, orange_px, ndvi_a1, ndvi_a2, ndvi_b1, ndvi_b2, ndvi_c1, ndvi_c2, ndvi_d1, ndvi_d2, ndvi_e1, ndvi_e2, cwsi_a1, cwsi_a2, cwsi_b1, cwsi_b2, cwsi_c1, cwsi_c2, cwsi_d1, cwsi_d2, cwsi_e1, cwsi_e2
 
 # Obtain red pixel and drought area change percentage since last month
 def get_drought_monitoring(last_two_month_data):
@@ -246,32 +268,110 @@ def get_drought_monitoring(last_two_month_data):
     drought_area_percent = (pixel_drought_this_month - pixel_drought_last_month)*100 / pixel_drought_last_month
     return "{:.2f}".format(red_pixel_percent), "{:.2f}".format(drought_area_percent*900/10000)
 
-def predict_two_month(cwsi):
-    list1 = []
-    list2 = []
-    for i in cwsi:
-        list1.append(i[2])
-        list2.append(i[3])
+def make_dataframe(lahan, period, cwsi, ndvi):
+    listCWSI1 = []
+    listCWSI2 = []
+    listNDVI1 = []
+    listNDVI2 = []
+    if lahan == "A":
+        for i in cwsi:
+            listCWSI1.append(i[2])
+            listCWSI2.append(i[3])
+        for j in ndvi:
+            listNDVI1.append(j[2])
+            listNDVI2.append(j[3])
+    elif lahan == "B":
+        for i in cwsi:
+            listCWSI1.append(i[4])
+            listCWSI2.append(i[5])
+        for j in ndvi:
+            listNDVI1.append(j[4])
+            listNDVI2.append(j[5])
+    elif lahan == "C":
+        for i in cwsi:
+            listCWSI1.append(i[6])
+            listCWSI2.append(i[7])
+        for j in ndvi:
+            listNDVI1.append(j[6])
+            listNDVI2.append(j[7])
+    elif lahan == "D":
+        for i in cwsi:
+            listCWSI1.append(i[8])
+            listCWSI2.append(i[9])
+        for j in ndvi:
+            listNDVI1.append(j[8])
+            listNDVI2.append(j[9])
+    else:
+        for i in cwsi:
+            listCWSI1.append(i[10])
+            listCWSI2.append(i[11])
+        for j in ndvi:
+            listNDVI1.append(j[10])
+            listNDVI2.append(j[11])
+    for i in range(0, 1):
+        listCWSI1 = np.insert(listCWSI1, len(listCWSI1), np.nan)
+        listCWSI2 = np.insert(listCWSI2, len(listCWSI2), np.nan)
+        listNDVI1 = np.insert(listNDVI1, len(listNDVI1), np.nan)
+        listNDVI2 = np.insert(listNDVI2, len(listNDVI2), np.nan)
     dataframe1 = DataFrame()
     dataframe2 = DataFrame()
-    for i in range(1,0,-1):
-        dataframe1['CWSI-'+str(i)] = pd.Series(list1).shift(i)
-        dataframe2['CWSI-'+str(i)] = pd.Series(list2).shift(i)
-    dataframe1['CWSI'] = pd.Series(list1).shift(-1)
-    dataframe2['CWSI'] = pd.Series(list2).shift(-1)
+    for i in range(3,0,-1):
+        dataframe1['CWSI-'+str(i)] = pd.Series(listCWSI1).shift(i)
+        dataframe2['CWSI-'+str(i)] = pd.Series(listCWSI2).shift(i)
+    for i in range(3,0,-1):
+        dataframe1['NDVI-'+str(i)] = pd.Series(listNDVI1).shift(i)
+        dataframe2['NDVI-'+str(i)] = pd.Series(listNDVI2).shift(i)
+    if period == "1 bulan":
+        dataframe1['CWSI'] = pd.Series(listCWSI1)
+        dataframe2['CWSI'] = pd.Series(listCWSI2)
+    elif period == "2 bulan":
+        dataframe1['CWSI'] = pd.Series(listCWSI1).shift(-1)
+        dataframe2['CWSI'] = pd.Series(listCWSI2).shift(-1)
+    else:
+        dataframe1['CWSI'] = pd.Series(listCWSI1).shift(-2)
+        dataframe2['CWSI'] = pd.Series(listCWSI2).shift(-2)
+    dataframe = dataframe1
     dataframe1 = dataframe1.dropna()
-    row = len(dataframe1.index)
     dataframe2 = dataframe2.dropna()
     df_row_reindex = pd.concat([dataframe1, dataframe2], ignore_index=True)
+    return df_row_reindex, dataframe
 
+def predict_cwsi(lahan, period, cwsi, ndvi):
+    df_row_reindex, listCWSI1 = make_dataframe(lahan, period, cwsi, ndvi)
     array = df_row_reindex.values
-    X = array[:,0:1]
+    X = array[:,0:6]
     y = array[:,-1]
     regressor = RandomForestRegressor(n_estimators=400, random_state=1)
     regressor.fit(X, y)
-    y_pred = regressor.predict(np.array(list1).reshape(-1,1))
-    for i in range(0, 2):
-        y_pred = np.insert(y_pred, 0, np.nan)
+    y_pred = regressor.predict(listCWSI1.values[3:,0:6])
+    if period == "1 bulan":
+        for i in range(0, 3):
+            y_pred = np.insert(y_pred, 0, np.nan)
+    elif period == "2 bulan":
+        for i in range(0, 4):
+            y_pred = np.insert(y_pred, 0, np.nan)
+    else:
+        for i in range(0, 5):
+            y_pred = np.insert(y_pred, 0, np.nan)
+    return y_pred
+
+def predict_cwsi_no_ndvi(lahan, period, cwsi, ndvi):
+    df_row_reindex, listCWSI1 = make_dataframe(lahan, period, cwsi, ndvi)
+    array = df_row_reindex.values
+    X = array[:,0:3]
+    y = array[:,-1]
+    regressor = RandomForestRegressor(n_estimators=400, random_state=1)
+    regressor.fit(X, y)
+    y_pred = regressor.predict(listCWSI1.values[3:,0:3])
+    if period == "1 bulan":
+        for i in range(0, 3):
+            y_pred = np.insert(y_pred, 0, np.nan)
+    elif period == "2 bulan":
+        for i in range(0, 4):
+            y_pred = np.insert(y_pred, 0, np.nan)
+    else:
+        for i in range(0, 5):
+            y_pred = np.insert(y_pred, 0, np.nan)
     return y_pred
 
 # Classify

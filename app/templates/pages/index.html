@@ -104,31 +104,31 @@
                 </div>
               </div>
               <div class="tab-pane fade" id="pills-input" role="tabpanel" aria-labelledby="pills-input-tab">
-                <form method="POST" enctype="multipart/form-data" action="">
+                <form method="POST" enctype="multipart/form-data" action="{{ url_for('estimasi') }}">
                   <div class="card-body">
                     <div class="form-group">
                       <label for="">Citra Band 4</label>
-                      <input type="file" class="form-control-file" id="band4" name="band4">
+                      <input type="file" class="form-control-file" id="band4" name="band4" required>
                     </div>
                     <div class="form-group">
                       <label for="">Citra Band 5</label>
-                      <input type="file" class="form-control-file" id="band5" name="band5">
+                      <input type="file" class="form-control-file" id="band5" name="band5" required>
                     </div>
                     <div class="form-group">
                       <label for="">Citra Band 10</label>
-                      <input type="file" class="form-control-file" id="band10" name="band10">
+                      <input type="file" class="form-control-file" id="band10" name="band10" required>
                     </div>
                     <div class="form-group">
                       <label for="">Citra Band 11</label>
-                      <input type="file" class="form-control-file" id="band11" name="band11">
+                      <input type="file" class="form-control-file" id="band11" name="band11" required>
                     </div>
                     <div class="form-group">
                       <label for="">File Metadata</label>
-                      <input type="file" class="form-control-file" id="fileMetadata" name="fileMetadata">
+                      <input type="file" class="form-control-file" id="fileMetadata" name="fileMetadata" required>
                     </div>
                     <div class="form-group">
                       <label for="">File Water Vapor</label>
-                      <input type="file" class="form-control-file" id="fileWaterVapor" name="fileWaterVapor">
+                      <input type="file" class="form-control-file" id="fileWaterVapor" name="fileWaterVapor" required>
                     </div>
                   </div>
                   <div class="card-action">
@@ -203,36 +203,74 @@
       </div>
 
       <div class="row">
-        <div class="col-md-12">
+        <div class="col-md-3">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-head-row">
+                <div class="card-title">Prediksi CWSI</div>
+              </div>
+            </div>
+            <form method="POST" enctype="multipart/form-data" action="{{ url_for('prediksi') }}">
+              <div class="card-body">
+                <div class="form-group">
+                  <label for="defaultSelect">Pilih Area Lahan</label>
+                  <select class="form-control form-control" id="selectArea" name="selectArea" required>
+                      <option></option>
+                      <option>A</option>
+                      <option>B</option>
+                      <option>C</option>
+                      <option>D</option>
+                      <option>E</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="defaultSelect">Pilih Waktu Prediksi</label>
+                  <select class="form-control form-control" id="selectPeriod" name="selectPeriod" required>
+                      <option></option>
+                      <option>1 bulan</option>
+                      <option>2 bulan</option>
+                      <option>3 bulan</option>
+                  </select>
+                </div>
+              </div>
+              <div class="card-action">
+                <button class="btn btn-success" type="submit">Submit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="col-md-9">
           <div class="card">
               <div class="card-header">
                 <div class="card-head-row">
-                  <div class="card-title">Grafik CWSI</div>
+                  <div class="card-title">Grafik Prediksi CWSI Lahan {{lahan}} ({{period}})</div>
                   <div class="card-tools">
                     <ul class="nav nav-pills nav-secondary nav-pills-no-bd" id="pills-tab" role="tablist">
                       <li class="nav-item">
-                          <a class="nav-link active" id="pills-lahanA-tab" data-toggle="pill" href="#pills-lahanA" role="tab" aria-selected="true">Lahan A</a>
+                          <a class="nav-link active" id="pills-dengan_NDVI-tab" data-toggle="pill" href="#pills-dengan_NDVI" role="tab" aria-selected="true">Dengan NDVI</a>
                       </li>
                       <li class="nav-item">
-                          <a class="nav-link" id="pills-lahanB-tab" data-toggle="pill" href="#pills-lahanB" role="tab" aria-selected="false">Lahan B</a>
+                          <a class="nav-link" id="pills-tanpa_NDVI-tab" data-toggle="pill" href="#pills-tanpa_NDVI" role="tab" aria-selected="false">Tanpa NDVI</a>
                       </li>
                     </ul>
                   </div>
                 </div>
-              </div>`
+              </div> 
               <div class="tab-content" id="pills-tabContent">
-                <div class="tab-pane fade show active" id="pills-lahanA" role="tabpanel" aria-labelledby="pills-lahanA-tab">
+                <div class="tab-pane fade show active" id="pills-dengan_NDVI" role="tabpanel" aria-labelledby="pills-dengan_NDVI-tab">
                   <div class="card-body">
                     <div class="chart-container">
-                      <canvas id="multipleLineChart"></canvas>
+                      <canvas id="multipleLineChart1"></canvas>
                     </div>
                   </div>
                 </div>
-                <div class="tab-pane fade" id="pills-lahanB" role="tabpanel" aria-labelledby="pills-lahanB-tab">
+                <div class="tab-pane fade" id="pills-tanpa_NDVI" role="tabpanel" aria-labelledby="pills-tanpa_NDVI-tab">
                   <div class="card-body">
-                    <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Eos laboriosam assumenda velit eum sed repellendus, commodi dolore reiciendis fugit cumque unde voluptas a quos facilis excepturi, adipisci dicta? Vel, fugit?</p>
+                    <div class="chart-container">
+                      <canvas id="multipleLineChart2"></canvas>
+                    </div>
                   </div>
-                </div>
+                </div>         
               </div>
           </div>
         </div>
@@ -512,15 +550,16 @@
       "searching": false,   // Search Box will Be Disabled
       "info": false,         // Will show "1 to n of n entries" Text at bottom
       "lengthChange": false, // Will Disabled Record number per page
-      "pageLength": 6
+      "pageLength": 5
     });
 
     var label_tanggal = {{ tanggal|tojson|safe }};
     var actual_data = {{ actual|tojson|safe }};
-    var predict_two_month = {{ predict|tojson|safe }};
+    var predict_data = {{ predict|tojson|safe }};
+    var predict_no_ndvi_data = {{ predict_no_ndvi|tojson|safe }};
 
-    multipleLineChart = document.getElementById('multipleLineChart').getContext('2d');
-    var myMultipleLineChart = new Chart(multipleLineChart, {
+    multipleLineChart1 = document.getElementById('multipleLineChart1').getContext('2d');
+    var myMultipleLineChart1 = new Chart(multipleLineChart1, {
 			type: 'line',
 			data: {
 				labels: label_tanggal,
@@ -549,7 +588,70 @@
 					backgroundColor: 'transparent',
 					fill: true,
 					borderWidth: 2,
-					data: predict_two_month
+					data: predict_data
+				}]
+			},
+			options : {
+				responsive: true, 
+				maintainAspectRatio: false,
+				legend: {
+					position: 'top',
+				},
+				tooltips: {
+					bodySpacing: 4,
+					mode:"nearest",
+					intersect: 0,
+					position:"nearest",
+					xPadding:10,
+					yPadding:10,
+					caretPadding:10
+				},
+				layout:{
+					padding:{left:15,right:15,top:15,bottom:15}
+				},
+        scales: {
+          yAxes: [{
+              ticks: {
+                  max: 1,
+                  min: 0,
+                  stepSize: 0.2
+              }
+          }]
+        }
+			}
+		});
+
+    multipleLineChart2 = document.getElementById('multipleLineChart2').getContext('2d');
+    var myMultipleLineChart2 = new Chart(multipleLineChart2, {
+			type: 'line',
+			data: {
+				labels: label_tanggal,
+				datasets: [{
+					label: "Aktual",
+					borderColor: "#1d7af3",
+					pointBorderColor: "#FFF",
+					pointBackgroundColor: "#1d7af3",
+					pointBorderWidth: 2,
+					pointHoverRadius: 4,
+					pointHoverBorderWidth: 1,
+					pointRadius: 4,
+					backgroundColor: 'transparent',
+					fill: true,
+					borderWidth: 2,
+					data: actual_data
+				},{
+					label: "Prediksi",
+					borderColor: "#f3545d",
+					pointBorderColor: "#FFF",
+					pointBackgroundColor: "#f3545d",
+					pointBorderWidth: 2,
+					pointHoverRadius: 4,
+					pointHoverBorderWidth: 1,
+					pointRadius: 4,
+					backgroundColor: 'transparent',
+					fill: true,
+					borderWidth: 2,
+					data: predict_no_ndvi_data
 				}]
 			},
 			options : {
